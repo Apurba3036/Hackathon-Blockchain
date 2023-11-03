@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.19 <=0.8.20;
+pragma solidity 0.8.20;
 
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
@@ -22,13 +22,14 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
         _mint(msg.sender, 50 * 10**18);  //mintFifty Function: This function allows the manager to mint 50 tokens and transfer them to themselves.
     }
     
-
+    // getbalance function returns the balance of tokens held by the contract.
      function getbalance() public  view returns(uint)
     {    
         require(msg.sender==manager, "You are not the owner");
         return  _token.balanceOf(address(this));
     }
-    
+
+    // buytoknes function allows users to buy tokens by sending 2 ether.
     function buytoknes() public payable {
 
        
@@ -45,7 +46,7 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
 
 }
 
-
+// Community contract inherits from TheodoresToken.
 contract Community is TheodoresToken{
 
     struct Communitycreate{
@@ -59,7 +60,7 @@ contract Community is TheodoresToken{
     Communitycreate public sc;
     address payable  public Owner;
     address payable [] public nativebuyers;
-
+    // tocheckbuyer function checks if the caller is a buyer and records community creation data.
     function  tocheckbuyer(string memory name,string memory descript ) public{
 
           for (uint256 i = 0; i < buyers.length; i++) {
@@ -71,19 +72,19 @@ contract Community is TheodoresToken{
         }
     }
 
-
+     // native function allows the manager to mint 20 tokens and transfer them to themselves.
    function native() public  {
         require(msg.sender==manager,"Only owner can access it"); //It checks whether the sender (the caller of the function) is the manager, and if not, it reverts with an "Only owner can access it" error message.
         _mint(msg.sender, 20 * 10**18);  //mintFifty Function: This function allows the manager to mint 50 tokens and transfer them to themselves.
     }
 
-
+        // balance function returns the balance of tokens held by the contract.
       function balance() public  view returns(uint)
     {    
         require(msg.sender==manager, "You are not the owner");
         return  _token.balanceOf(address(this));
     }
-
+        // buytoknen function allows users to buy tokens by sending 2 ether.
        function buytoknen() public payable {
 
        
@@ -98,7 +99,7 @@ contract Community is TheodoresToken{
 
 
 
-     
+    // destroy function allows the Owner to destroy the contract.
     function destroy() public {
         require(Owner ==msg.sender,"You can not change");
         selfdestruct(Owner);
@@ -106,7 +107,7 @@ contract Community is TheodoresToken{
     
 }
 
-
+// CommunityProducts contract manages product publishing and voting.
 contract CommunityProducts {
     struct Product {
         address owner;
@@ -118,10 +119,14 @@ contract CommunityProducts {
 
     Product[] public products;
     mapping(address => uint256[]) public userProducts;
-
+      // Event fired when a product is published.
     event ProductPublished(address indexed owner, uint256 indexed productId, string title, string category);
+     // Event fired when a vote is cast.
     event VoteCasted(address indexed voter, uint256 indexed productId, bool liked);
 
+
+
+     // publishProduct function allows users to publish a product with a title and category.
     function publishProduct(string memory _title, string memory _category) public {
         require(bytes(_title).length > 0, "Title cannot be empty");
         require(bytes(_category).length > 0, "Category cannot be empty");
@@ -133,24 +138,32 @@ contract CommunityProducts {
 
         emit ProductPublished(msg.sender, productId, _title, _category);
     }
-
+    
+     // getProductsCount function returns the total number of products.
     function getProductsCount() public view returns (uint256) {
         return products.length;
     }
 
+
+
+    // getProduct function returns the details of a specific product.
     function getProduct(uint256 _productId) public view returns (Product memory) {
         require(_productId < products.length, "Invalid product ID");
         return products[_productId];
     }
 }
 
+ // getProduct function returns the details of a specific product.
 contract CommunityVoting {
     CommunityProducts public productsContract;
     event VoteCasted(address indexed voter, uint256 indexed productId, bool liked);
+
+     // Constructor sets the productsContract address.
     constructor(address _productsContract) {
         productsContract = CommunityProducts(_productsContract);
     }
-
+    
+     // vote function allows users to cast votes on products.
     function vote(uint256 _productId, bool _liked) public {
         require(_productId < productsContract.getProductsCount(), "Invalid product ID");
        
@@ -168,7 +181,7 @@ contract CommunityVoting {
 }
 
 
-
+// Auction contract manages auctions for products.
 contract Auction {
     address payable  public owner;
     string public productName;
@@ -181,10 +194,13 @@ contract Auction {
     uint256 public highestBid;
 
     bool public auctionEnded;
-
+      // Event fired when a new bid is placed.
     event NewBid(address indexed bidder, uint256 amount);
+    // Event fired when the auction ends with a winner.
     event AuctionEnded(address winner, uint256 amount);
 
+
+  //This constructor initializes an auction by setting various parameters such as the product name, starting price, price decrement, minimum price, and the duration of the auction. It also calculates and sets the auction end time based on the current block timestamp and the specified duration.
     constructor(
         string memory _productName,
         uint256 _startPrice,
@@ -200,16 +216,19 @@ contract Auction {
         auctionEndTime = block.timestamp + (_durationMinutes * 1 minutes);
     }
 
+     // Modifier to restrict access to only the owner.
     modifier onlyOwner() {
         require(msg.sender == owner, "Only the owner can perform this action");
         _;
     }
 
+    // Modifier to restrict certain actions only if the auction hasn't ended.
     modifier auctionNotEnded() {
         require(!auctionEnded, "The auction has already ended");
         _;
     }
-
+     
+     // getCurrentPrice function calculates the current price based on the auction parameters.
     function getCurrentPrice() public view returns (uint256) {
         uint256 timeRemaining = (auctionEndTime > block.timestamp) ? auctionEndTime - block.timestamp : 0;
         uint256 timeElapsed = (block.timestamp > auctionEndTime) ? block.timestamp - auctionEndTime : 0;
@@ -217,7 +236,7 @@ contract Auction {
         return (price < minimumPrice) ? minimumPrice : price;
     }
 
-    function placeBid() public payable auctionNotEnded {
+    function placeBid() public payable auctionNotEnded { // placeBid function allows users to place bids in the auction.
         require(msg.value > 0, "Bid amount must be greater than 0");
         uint256 currentPrice = getCurrentPrice();
         require(msg.value >= currentPrice, "Bid amount is less than the current price");
@@ -230,7 +249,7 @@ contract Auction {
         emit NewBid(msg.sender, msg.value);
     }
 
-    function endAuction() public onlyOwner auctionNotEnded {
+    function endAuction() public onlyOwner auctionNotEnded {  // endAuction function allows the owner to end the auction and declare a winner.
         require(block.timestamp >= auctionEndTime, "Auction time has not yet ended");
         
         auctionEnded = true;
