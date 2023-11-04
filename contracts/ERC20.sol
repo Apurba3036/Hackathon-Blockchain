@@ -178,11 +178,20 @@ contract CommunityVoting {
 
         emit VoteCasted(msg.sender, _productId, _liked);
     }
+
+     function status(uint256 _productId) public view {
+        CommunityProducts.Product memory product = productsContract.getProduct(_productId);
+
+        require(product.likes>product.dislikes,"Product will not get at auction");
+    }
 }
 
 
 // Auction contract manages auctions for products.
-contract Auction {
+contract Auction is CommunityVoting{
+
+   
+
     address payable  public owner;
     string public productName;
     uint256 public startPrice;
